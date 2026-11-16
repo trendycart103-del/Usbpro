@@ -59,15 +59,15 @@ jobs:
 
       - name: Run unit tests
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee build-tests.log
+        run: gradle :app:testDebugUnitTest --console=plain 2>&1 | tee build-tests.log
 
       - name: Run static checks (lint)
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle :app:lintDebug --stacktrace 2>&1 | tee build-lint.log
+        run: gradle :app:lintDebug --console=plain 2>&1 | tee build-lint.log
 
       - name: Assemble debug APK
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle :app:assembleDebug --stacktrace 2>&1 | tee build-assemble.log
+        run: gradle :app:assembleDebug --console=plain 2>&1 | tee build-assemble.log
 
       - name: Show errors summary
         if: failure()
@@ -75,8 +75,15 @@ jobs:
         run: |
           for f in build-tests.log build-lint.log build-assemble.log; do
             [ -f "$f" ] || continue
-            echo "===== $f ====="
-            grep -E "^e: |error:|FAILED|What went wrong" -A3 "$f" | head -n 80 || true
+            echo "===== $f : What went wrong ====="
+            grep -n "What went wrong" -A12 "$f" | head -n 60 || true
+            echo "===== $f : compiler / resource errors ====="
+            grep -n -E "^e: |AAPT|error:|Execution failed" "$f" | head -n 40 || true
+          done
+          echo "===== failed tests ====="
+          for x in $(grep -rl "<failure" app/build/test-results 2>/dev/null | head -n 5); do
+            echo "$x"
+            grep -A6 "<failure" "$x" | head -n 20
           done
 
       - name: Upload APK artifact
