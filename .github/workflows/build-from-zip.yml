@@ -70,7 +70,8 @@ jobs:
 
       - name: Show compile errors summary
         if: failure()
-        run: grep -E "^e: |error:|FAILED" build-assemble.log || true
+        run: |
+          grep -E "^e: |error:|FAILED" build-assemble.log || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
