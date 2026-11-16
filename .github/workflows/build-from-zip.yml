@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -64,6 +68,16 @@ jobs:
       - name: Assemble debug APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle :app:assembleDebug --stacktrace 2>&1 | tee build-assemble.log
+
+      - name: Show errors summary
+        if: failure()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          for f in build-tests.log build-lint.log build-assemble.log; do
+            [ -f "$f" ] || continue
+            echo "===== $f ====="
+            grep -E "^e: |error:|FAILED|What went wrong" -A3 "$f" | head -n 80 || true
+          done
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
